@@ -1,0 +1,111 @@
+{
+  // Application ID shown in the Rerun viewer title bar.
+  // app_id: "my-robot",
+
+  // ROS 2 domain ID (default: 0).
+  // domain_id: 0,
+
+  // Wire transports to start: "all", "dds" or "zenoh" (default: "all").
+  // Naming one leaves the other unopened, so a DDS-only robot carries no
+  // Zenoh session. Overridden by --transport.
+  // transport: "all",
+
+  // Seconds to block on initial topic discovery before subscribing.
+  // Unset, recording starts immediately and topics are bridged as they
+  // are discovered.
+  // discovery_timeout: 5,
+
+  // Channel capacity per subscription (higher = more buffering).
+  // queue_depth: 10,
+
+  // Tracing filter string (overridden by RUST_LOG if set).
+  // log_level: "bridge=info,iris=warn",
+
+  // Enable per-topic diagnostics (hz, bytes/sec, drops, latency).
+  // diagnostics: false,
+
+  // Rerun output settings.
+  output: {
+    // Connect to a remote Rerun viewer via gRPC (e.g. "127.0.0.1:9876").
+    // connect: null,
+
+    // Save recording to an .rrd file instead of live streaming.
+    // save: null,
+  },
+
+  // Topic selection filters. Glob patterns supported:
+  //   *  matches within a single path segment (does NOT cross '/').
+  //      e.g. "/camera/*" matches "/camera/image" but not "/camera/image/raw".
+  //   ** matches across segments, including '/'.
+  //      e.g. "/camera/**" matches "/camera/image/raw".
+  // Notes:
+  //   - "/robot/**" matches descendants only, NOT "/robot" itself.
+  //     To match both, list "/robot" and "/robot/**".
+  //   - Use "/**" to match every topic; a bare "*" matches nothing
+  //     (it cannot cross the leading '/').
+  topics: {
+    // Only subscribe to topics matching these patterns.
+    // include: [],
+
+    // Skip topics matching these patterns.
+    // exclude: ["/rosout", "/parameter_events"],
+  },
+
+  // Per-topic overrides.
+  //   enabled: false skips the topic even if the filters accept it
+  //   (exact names only).
+  //   max_hz caps the admitted rate; excess messages are dropped before
+  //   deserialization. Names may be globs with the same semantics as the
+  //   topic filters above. Exact names beat globs, and the first matching
+  //   glob wins, so put specific patterns before broad ones. Ignored (with
+  //   a warning) on latched topics such as /tf_static. Diagnostics keep
+  //   reporting the wire rate. Live capture only: `rewire convert` is
+  //   unaffected. For rate limiting on the wire itself, use a Zenoh router
+  //   downsampling interceptor instead.
+  // topic_overrides: [
+  //   { name: "/diagnostics", enabled: false },
+  //   { name: "/odom", max_hz: 30 },
+  //   { name: "/camera/**", max_hz: 10 },
+  // ],
+
+  // WebSocket server for live data streaming to browser clients.
+  ws: {
+    // Enable the WebSocket server (also requires --ws CLI flag).
+    // enabled: false,
+
+    // WebSocket server port.
+    // port: 9090,
+
+    // Bearer token for authentication (used with --secure).
+    // auth_token: null,
+  },
+
+  // Headless relay settings for `rewire serve`. CLI flags take precedence.
+  serve: {
+    // Address to bind the gRPC listener on.
+    // bind: "0.0.0.0",
+
+    // gRPC listen port.
+    // port: 9876,
+
+    // Buffered history limit before the oldest data is dropped
+    // (e.g. "4GiB", "500MB", "50%", "unlimited").
+    // memory_limit: "4GiB",
+
+    // Extra origin patterns allowed for cross-origin grpc-web requests,
+    // on top of Rerun's defaults (localhost, 127.0.0.1, rerun.io).
+    // cors_allowed_origins: ["https://*.example.com"],
+  },
+
+  // Zenoh transport settings. Ignored unless `transport` runs Zenoh.
+  zenoh: {
+    // Router endpoint(s) to dial (e.g. "tcp/router:7447"). Unset, the bridge
+    // dials tcp/localhost:7447, where the rmw_zenoh router listens.
+    // connect: [],
+
+    // Also scout for peers over multicast, on top of dialing the endpoints
+    // above. Off by default, as the rmw_zenoh router is too, so leaving this
+    // on will not find one.
+    // multicast_scouting: false,
+  },
+}

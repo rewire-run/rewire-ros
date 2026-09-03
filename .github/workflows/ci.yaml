@@ -1,0 +1,48 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build-${{ matrix.distro }}
+    runs-on: ubuntu-latest
+    container: ros:${{ matrix.distro }}-ros-base
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: [humble, jazzy, kilted]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: src/rewire_ros
+
+      - name: Install colcon
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends python3-colcon-common-extensions
+          rm -rf /var/lib/apt/lists/*
+
+      - name: Build
+        shell: bash
+        run: |
+          source /opt/ros/${{ matrix.distro }}/setup.bash
+          colcon build --packages-select rewire_ros
+
+      - name: The pinned binary runs
+        shell: bash
+        run: |
+          source install/setup.bash
+          ros2 run rewire_ros rewire --version
+
+      - name: The launch file declares its arguments
+        shell: bash
+        run: |
+          source install/setup.bash
+          ros2 launch rewire_ros rewire.launch.py --show-args

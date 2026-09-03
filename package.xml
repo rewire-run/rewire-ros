@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>rewire_ros</name>
+  <version>0.10.1</version>
+  <description>Launch integration for rewire, a drop-in ROS 2 bridge for the Rerun viewer.</description>
+
+  <maintainer email="alvgaona@gmail.com">Alvaro Gaona</maintainer>
+  <license file="LICENSE">Apache-2.0</license>
+
+  <url type="repository">https://github.com/rewire-run/rewire-ros</url>
+  <url type="website">https://rewire.run</url>
+  <url type="bugtracker">https://github.com/rewire-run/rewire-ros/issues</url>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>launch</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
