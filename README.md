@@ -6,7 +6,18 @@ rewire speaks DDS and Zenoh natively and is not an rcl node, so this package doe
 
 ## What the build does
 
-There is nothing to compile. The CMake step downloads the rewire release pinned in [`sources.json`](sources.json), verifies its SHA-256, and installs the bridge binary into the package's `lib` directory. The release archive also carries `rewire-viewer`, which is over three times the size of the bridge and of no use on a robot, so it is skipped.
+There is nothing to compile. The CMake step downloads the rewire release pinned in [`sources.json`](sources.json), verifies its SHA-256, and installs both binaries from it into the package's `lib` directory. You need nothing else on the machine: `ros2 launch` starts the bridge, and it finds the viewer sitting beside it.
+
+| Installed | Size |
+| --- | --- |
+| `rewire`, the bridge | 70 MB |
+| `rewire-viewer` | 235 MB |
+
+A robot that streams to a workstation has no use for a viewer, and can leave it out:
+
+```bash
+colcon build --packages-select rewire_ros --cmake-args -DREWIRE_VIEWER=OFF
+```
 
 Supported platforms are Linux on x86_64 and aarch64, plus macOS on Apple silicon.
 
@@ -67,7 +78,11 @@ Domain ID needs no argument. With `domain_id` left commented out, rewire falls b
 
 ## Choosing an output
 
-With `connect` empty, rewire probes for a local viewer and spawns one if it finds none. That works on a workstation with a normal rewire install, where `rewire-viewer` is on `PATH`. It does not work on a headless robot whose only rewire is this package, because the viewer is deliberately not installed here and the fallback to a stock Rerun viewer needs `rerun` on `PATH`. On a robot, pass `connect` pointing at the workstation running the viewer, or pass `save` with `args:="--no-live"` to archive without a live half.
+With `connect` empty, rewire probes for a viewer already listening and spawns one if it finds none. The bundled viewer sits next to the bridge in the package's `lib` directory, which is the first place rewire looks, so a plain launch on a desktop opens a window and needs no argument.
+
+Two cases want something else. A robot streaming to a workstation should pass `connect` naming that machine, which skips the probe entirely. A robot recording for later should pass `save` together with `args:="--no-live"`, which writes an `.rrd` and never looks for a viewer at all. Both are worth pairing with `-DREWIRE_VIEWER=OFF` at build time, since neither spawns one.
+
+A build with `-DREWIRE_VIEWER=OFF` and an empty `connect` falls through to spawning a stock Rerun viewer, which fails unless `rerun` is on `PATH`. That combination is the one to avoid.
 
 ## Versioning
 

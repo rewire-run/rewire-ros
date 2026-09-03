@@ -5,6 +5,8 @@ find_package(ament_cmake REQUIRED)
 
 set(REWIRE_BINARY "" CACHE FILEPATH
   "Install this rewire binary instead of downloading the pinned release")
+option(REWIRE_VIEWER
+  "Install rewire-viewer alongside the bridge, so a plain launch spawns a viewer" ON)
 
 if(REWIRE_BINARY)
   if(NOT EXISTS "${REWIRE_BINARY}")
@@ -44,15 +46,29 @@ else()
     message(FATAL_ERROR "could not download ${rewire_url}: ${rewire_download_error}")
   endif()
 
-  # The archive also carries rewire-viewer, which is over three times the size of the
-  # bridge and of no use on a robot.
-  file(ARCHIVE_EXTRACT INPUT "${rewire_archive}"
-    DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/rewire"
-    PATTERNS "rewire")
+  if(REWIRE_VIEWER)
+    file(ARCHIVE_EXTRACT INPUT "${rewire_archive}"
+      DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/rewire")
+  else()
+    file(ARCHIVE_EXTRACT INPUT "${rewire_archive}"
+      DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/rewire"
+      PATTERNS "rewire")
+  endif()
   set(rewire_exe "${CMAKE_CURRENT_BINARY_DIR}/rewire/rewire")
+
+  # A release may ship without the viewer: it is built in another repository and the
+  # release job tolerates its absence, as install.sh does.
+  set(rewire_viewer_exe "${CMAKE_CURRENT_BINARY_DIR}/rewire/rewire-viewer")
+  if(REWIRE_VIEWER AND NOT EXISTS "${rewire_viewer_exe}")
+    message(WARNING "rewire ${rewire_version} shipped no viewer for ${rewire_platform}")
+    unset(rewire_viewer_exe)
+  endif()
 endif()
 
 install(PROGRAMS "${rewire_exe}" DESTINATION lib/${PROJECT_NAME})
+if(REWIRE_VIEWER AND rewire_viewer_exe)
+  install(PROGRAMS "${rewire_viewer_exe}" DESTINATION lib/${PROJECT_NAME})
+endif()
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 
 ament_package()
