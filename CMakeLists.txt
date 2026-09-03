@@ -3,12 +3,17 @@ project(rewire_ros)
 
 find_package(ament_cmake REQUIRED)
 
+option(REWIRE_BUNDLE
+  "Install the rewire binaries into this package. Off expects rewire on PATH, which is
+   how the deb is built: it depends on the rewire package instead of carrying a copy" ON)
 set(REWIRE_BINARY "" CACHE FILEPATH
   "Install this rewire binary instead of downloading the pinned release")
 option(REWIRE_VIEWER
   "Install rewire-viewer alongside the bridge, so a plain launch spawns a viewer" ON)
 
-if(REWIRE_BINARY)
+if(NOT REWIRE_BUNDLE)
+  message(STATUS "rewire: bundling disabled, the launch file will resolve rewire on PATH")
+elseif(REWIRE_BINARY)
   if(NOT EXISTS "${REWIRE_BINARY}")
     message(FATAL_ERROR "REWIRE_BINARY is ${REWIRE_BINARY}, which does not exist")
   endif()
@@ -65,9 +70,11 @@ else()
   endif()
 endif()
 
-install(PROGRAMS "${rewire_exe}" DESTINATION lib/${PROJECT_NAME})
-if(REWIRE_VIEWER AND rewire_viewer_exe)
-  install(PROGRAMS "${rewire_viewer_exe}" DESTINATION lib/${PROJECT_NAME})
+if(REWIRE_BUNDLE)
+  install(PROGRAMS "${rewire_exe}" DESTINATION lib/${PROJECT_NAME})
+  if(REWIRE_VIEWER AND rewire_viewer_exe)
+    install(PROGRAMS "${rewire_viewer_exe}" DESTINATION lib/${PROJECT_NAME})
+  endif()
 endif()
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 

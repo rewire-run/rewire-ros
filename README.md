@@ -4,6 +4,18 @@ ROS 2 launch integration for [rewire](https://rewire.run), a drop-in bridge that
 
 rewire speaks DDS and Zenoh natively and is not an rcl node, so this package does not build it, wrap it in a node, or expose ROS parameters. It exists so that `ros2 launch` can start the bridge alongside the rest of your stack, with the configuration living where rewire already expects it.
 
+## Install
+
+```bash
+curl -fsSL https://apt.rewire.run/key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/rewire.gpg
+echo "deb [signed-by=/usr/share/keyrings/rewire.gpg] https://apt.rewire.run stable main" | sudo tee /etc/apt/sources.list.d/rewire.list
+sudo apt update && sudo apt install ros-humble-rewire-ros
+```
+
+Substitute your distribution for `humble`. That one command is enough: the package declares a dependency on `rewire`, so apt fetches the bridge and the viewer from the same repository and puts them on your `PATH`. Nothing else to download.
+
+The ROS package itself carries no binaries, which is why one copy of rewire serves every ROS distribution you have installed. Build it from source instead, as below, and it bundles its own copy.
+
 ## What the build does
 
 There is nothing to compile. The CMake step downloads the rewire release pinned in [`sources.json`](sources.json), verifies its SHA-256, and installs both binaries from it into the package's `lib` directory. You need nothing else on the machine: `ros2 launch` starts the bridge, and it finds the viewer sitting beside it.
@@ -13,11 +25,14 @@ There is nothing to compile. The CMake step downloads the rewire release pinned 
 | `rewire`, the bridge | 70 MB |
 | `rewire-viewer` | 235 MB |
 
-A robot that streams to a workstation has no use for a viewer, and can leave it out:
+A robot that streams to a workstation has no use for a viewer, and can leave it out. A machine that already has rewire, from apt or the install script, needs no bundled copy at all:
 
 ```bash
 colcon build --packages-select rewire_ros --cmake-args -DREWIRE_VIEWER=OFF
+colcon build --packages-select rewire_ros --cmake-args -DREWIRE_BUNDLE=OFF
 ```
+
+With `-DREWIRE_BUNDLE=OFF` the package installs only the launch file and resolves `rewire` on `PATH`, which is exactly how the deb is built.
 
 Supported platforms are Linux on x86_64 and aarch64, plus macOS on Apple silicon.
 

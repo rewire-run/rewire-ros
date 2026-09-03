@@ -11,14 +11,18 @@ from launch.substitutions import LaunchConfiguration
 PACKAGE = 'rewire_ros'
 
 
+def rewire_executable():
+    """A source build bundles the binaries here; the deb depends on the rewire
+    package instead and leaves them on PATH."""
+    bundled = os.path.join(get_package_prefix(PACKAGE), 'lib', PACKAGE, 'rewire')
+    return bundled if os.path.isfile(bundled) else 'rewire'
+
+
 def launch_setup(context, *args, **kwargs):
     def value(name):
         return LaunchConfiguration(name).perform(context)
 
-    command = [
-        os.path.join(get_package_prefix(PACKAGE), 'lib', PACKAGE, 'rewire'),
-        'record',
-    ]
+    command = [rewire_executable(), 'record']
     if value('config'):
         command += ['--config', value('config')]
     if value('connect'):

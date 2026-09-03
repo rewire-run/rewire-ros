@@ -1,0 +1,110 @@
+name: deb
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deb:
+    name: deb-${{ matrix.distro }}
+    runs-on: ubuntu-latest
+    container: ros:${{ matrix.distro }}-ros-base
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: [humble, jazzy, kilted, lyrical]
+    steps:
+      - uses: actions/checkout@v5
+
+      # The package carries no binaries and no compiled code, so one deb serves every
+      # architecture. rewire itself is a separate package that apt pulls in.
+      - name: Build the install tree
+        shell: bash
+        run: |
+          source /opt/ros/${{ matrix.distro }}/setup.bash
+          cmake -S . -B build \
+            -DCMAKE_INSTALL_PREFIX=/opt/ros/${{ matrix.distro }} \
+            -DREWIRE_BUNDLE=OFF
+          DESTDIR="${PWD}/pkg" cmake --install build
+
+      - name: Assemble the deb
+        shell: bash
+        run: |
+          VERSION="$(sed -n 's:.*<version>\(.*\)</version>.*:\1:p' package.xml | head -1)"
+          if [ -n "${GITHUB_REF_NAME#v}" ] && [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+
+          mkdir -p pkg/DEBIAN
+          cat > pkg/DEBIAN/control << EOF
+          Package: ros-${{ matrix.distro }}-rewire-ros
+          Version: ${VERSION}
+          Section: misc
+          Priority: optional
+          Architecture: all
+          Depends: rewire, ros-${{ matrix.distro }}-launch, ros-${{ matrix.distro }}-ament-index-python, ros-${{ matrix.distro }}-ros-workspace
+          Maintainer: Alvaro Gaona <alvgaona@gmail.com>
+          Homepage: https://rewire.run
+          Description: ROS 2 launch integration for the rewire bridge
+           Starts rewire from ros2 launch, streaming live ROS 2 topics into the
+           Rerun viewer. The bridge itself comes from the rewire package.
+          EOF
+          sed -i 's/^          //' pkg/DEBIAN/control
+          dpkg-deb --build pkg "ros-${{ matrix.distro }}-rewire-ros_${VERSION}_all.deb"
+
+      - name: Inspect it
+        shell: bash
+        run: |
+          DEB="ros-${{ matrix.distro }}-rewire-ros_${VERSION}_all.deb"
+          dpkg-deb --info "${DEB}"
+          dpkg-deb --contents "${DEB}"
+          # Nothing from the release archive may ride along in this package.
+          if dpkg-deb --contents "${DEB}" | grep -E 'lib/rewire_ros/rewire'; then
+            echo "::error::the deb carries a rewire binary; it must depend on the rewire package instead"
+            exit 1
+          fi
+
+      # Proves the whole chain: installing the ROS package pulls rewire out of the apt
+      # repo on its own, and the launch file then finds it on PATH.
+      - name: Install it, letting apt pull rewire in
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends curl ca-certificates gnupg
+          curl -fsSL https://apt.rewire.run/key.gpg | gpg --dearmor -o /usr/share/keyrings/rewire.gpg
+          echo "deb [signed-by=/usr/share/keyrings/rewire.gpg] https://apt.rewire.run stable main" \
+            > /etc/apt/sources.list.d/rewire.list
+          apt-get update
+          apt-get install -y "./ros-${{ matrix.distro }}-rewire-ros_${VERSION}_all.deb"
+          command -v rewire
+          rewire --version
+          source /opt/ros/${{ matrix.distro }}/setup.bash
+          ros2 launch rewire_ros rewire.launch.py --show-args
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: deb-${{ matrix.distro }}
+          path: "*.deb"
+
+  release:
+    name: attach-to-release
+    needs: deb
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: deb-*
+          merge-multiple: true
+          path: debs
+
+      - uses: softprops/action-gh-release@v3
+        with:
+          files: "debs/*.deb"
