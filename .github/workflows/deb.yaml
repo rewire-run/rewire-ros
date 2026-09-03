@@ -71,18 +71,26 @@ jobs:
             exit 1
           fi
 
-      # Proves the whole chain: installing the ROS package pulls rewire out of the apt
-      # repo on its own, and the launch file then finds it on PATH.
+      # Installs by NAME out of a local repo holding both debs, so apt has to resolve
+      # Depends: rewire itself. apt.rewire.run is not used here because Cloudflare
+      # answers 403 to GitHub's runners.
       - name: Install it, letting apt pull rewire in
         shell: bash
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends curl ca-certificates gnupg
-          curl -fsSL https://apt.rewire.run/key.gpg | gpg --dearmor -o /usr/share/keyrings/rewire.gpg
-          echo "deb [signed-by=/usr/share/keyrings/rewire.gpg] https://apt.rewire.run stable main" \
-            > /etc/apt/sources.list.d/rewire.list
+          apt-get install -y --no-install-recommends dpkg-dev curl ca-certificates
+
+          REWIRE_VERSION="$(python3 -c "import json; print(json.load(open('sources.json'))['version'])")"
+          curl -fsSL -o "rewire_${REWIRE_VERSION}_amd64.deb" \
+            "https://github.com/rewire-run/rewire/releases/download/v${REWIRE_VERSION}/rewire_${REWIRE_VERSION}_amd64.deb"
+
+          mkdir -p /tmp/repo && cp ./*.deb /tmp/repo/
+          (cd /tmp/repo && dpkg-scanpackages . > Packages)
+          echo "deb [trusted=yes] file:///tmp/repo ./" > /etc/apt/sources.list.d/local.list
           apt-get update
-          apt-get install -y "./ros-${{ matrix.distro }}-rewire-ros_${VERSION}_all.deb"
+          apt-get install -y "ros-${{ matrix.distro }}-rewire-ros"
+
+          dpkg -s rewire > /dev/null
           command -v rewire
           rewire --version
           source /opt/ros/${{ matrix.distro }}/setup.bash
