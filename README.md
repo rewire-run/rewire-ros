@@ -36,7 +36,7 @@ ros2 launch rewire_ros rewire.launch.py save:=/data/flight args:="--no-live"
 
 | Argument | Default | Meaning |
 | --- | --- | --- |
-| `config` | the installed `config/rewire.json5` | JSON5 file holding topic filters and per-topic overrides |
+| `config` | empty | JSON5 file holding topic filters and per-topic overrides. Empty uses rewire's own default location |
 | `connect` | empty | Rerun viewer or relay to stream to, as `host` or `host:port` |
 | `save` | empty | Write an `.rrd` archive with this path stem |
 | `args` | empty | Extra flags passed through to `rewire record` verbatim |
@@ -50,14 +50,18 @@ ros2 run rewire_ros rewire types
 
 ## Configuration
 
-Topic selection, throttling, and per-topic overrides belong in the JSON5 config rather than on the command line, because the file supports glob patterns and per-topic rules that the flags cannot express. Copy the installed default, edit it, and pass it back:
+Topic selection, throttling, and per-topic overrides belong in the JSON5 config rather than on the command line, because the file supports glob patterns and per-topic rules that the flags cannot express.
+
+This package ships no config of its own, so rewire resolves it exactly as it does outside ROS. With the `config` argument left empty, it reads `~/.config/rewire/config.json5` when that file exists, and otherwise runs on defaults. A config you already wrote for rewire therefore keeps working when you launch it this way.
+
+To start from a documented template, or to keep a config per robot:
 
 ```bash
-cp $(ros2 pkg prefix rewire_ros)/share/rewire_ros/config/rewire.json5 my_robot.json5
+ros2 run rewire_ros rewire config generate > my_robot.json5
 ros2 launch rewire_ros rewire.launch.py config:=my_robot.json5
 ```
 
-Every key ships commented out, so the defaults apply as-is. The usual first edit is uncommenting the `exclude` list to drop `/rosout` and `/parameter_events`.
+Every key in the template ships commented out, so the defaults apply as-is. The usual first edit is uncommenting the `exclude` list to drop `/rosout` and `/parameter_events`.
 
 Domain ID needs no argument. With `domain_id` left commented out, rewire falls back to `ROS_DOMAIN_ID`, so a launch that inherits your environment joins the same graph as everything else. Custom message types resolve through `AMENT_PREFIX_PATH`, so sourcing the workspace that holds your interface packages is all that is required.
 
@@ -71,6 +75,6 @@ The package version tracks the rewire release it pins, so `rewire_ros` 0.10.1 in
 
 ## License
 
-This package is licensed under the Apache License 2.0, in [`LICENSE`](LICENSE). That covers the manifest, the CMake file, the launch file, and the shipped config.
+This package is licensed under the Apache License 2.0, in [`LICENSE`](LICENSE). That covers the manifest, the CMake file, and the launch file.
 
 It does not cover rewire itself. The bridge binary is proprietary and is not redistributed here. This repository contains a URL and a checksum, and your build downloads the binary directly from the [rewire releases](https://github.com/rewire-run/rewire/releases) under rewire's own terms.

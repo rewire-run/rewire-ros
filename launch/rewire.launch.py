@@ -3,7 +3,7 @@
 import os
 import shlex
 
-from ament_index_python.packages import get_package_prefix, get_package_share_directory
+from ament_index_python.packages import get_package_prefix
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, ExecuteProcess, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
@@ -18,9 +18,9 @@ def launch_setup(context, *args, **kwargs):
     command = [
         os.path.join(get_package_prefix(PACKAGE), 'lib', PACKAGE, 'rewire'),
         'record',
-        '--config',
-        value('config'),
     ]
+    if value('config'):
+        command += ['--config', value('config')]
     if value('connect'):
         command += ['--connect', value('connect')]
     if value('save'):
@@ -31,15 +31,13 @@ def launch_setup(context, *args, **kwargs):
 
 
 def generate_launch_description():
-    default_config = os.path.join(
-        get_package_share_directory(PACKAGE), 'config', 'rewire.json5'
-    )
-
     return LaunchDescription([
         DeclareLaunchArgument(
             'config',
-            default_value=default_config,
-            description='JSON5 config file holding topic filters and per-topic overrides',
+            default_value='',
+            description='JSON5 config file holding topic filters and per-topic overrides. '
+                        'Leave empty to use rewire config path, normally '
+                        '~/.config/rewire/config.json5',
         ),
         DeclareLaunchArgument(
             'connect',
