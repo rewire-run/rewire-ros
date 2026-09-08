@@ -2,26 +2,19 @@
 name = "rewire-ros"
 platforms = ["linux-64", "linux-aarch64", "osx-arm64"]
 channels = ["conda-forge"]
+preview = ["pixi-build"]
 
-[dependencies]
-cmake = ">=3.19"
-make = "*"
-cxx-compiler = "*"
-colcon-common-extensions = "*"
+# Name and version come from package.xml. The backend prefixes ros-<distro>-,
+# reading the distro off the robostack channel of whichever environment builds it.
+[package]
+
+[package.build.backend]
+name = "pixi-build-ros"
+version = "*"
+channels = ["https://prefix.dev/conda-forge"]
 
 [tasks]
-build = "colcon build --packages-select rewire_ros"
-
-# Mirrors the ci workflow. No `source install/setup.bash` here because pixi's
-# task shell has no `source`, so the install tree goes onto the ament index by hand.
-[tasks.check]
-cmd = """
-AMENT_PREFIX_PATH=$PIXI_PROJECT_ROOT/install/rewire_ros:$AMENT_PREFIX_PATH \
-ros2 run rewire_ros rewire --version \
-&& AMENT_PREFIX_PATH=$PIXI_PROJECT_ROOT/install/rewire_ros:$AMENT_PREFIX_PATH \
-ros2 launch rewire_ros rewire.launch.py --show-args
-"""
-depends-on = ["build"]
+check = "ros2 run rewire_ros rewire --version && ros2 launch rewire_ros rewire.launch.py --show-args"
 
 [environments]
 default = { features = ["jazzy"], solve-group = "jazzy" }
@@ -32,18 +25,18 @@ lyrical = { features = ["lyrical"], solve-group = "lyrical" }
 
 [feature.humble]
 channels = ["robostack-humble"]
-dependencies = { ros-humble-ros-core = "*" }
+dependencies = { ros-humble-rewire-ros = { path = "." }, ros-humble-ros2launch = "*", ros-humble-ros2run = "*" }
 
 [feature.jazzy]
 channels = ["robostack-jazzy"]
-dependencies = { ros-jazzy-ros-core = "*" }
+dependencies = { ros-jazzy-rewire-ros = { path = "." }, ros-jazzy-ros2launch = "*", ros-jazzy-ros2run = "*" }
 
 [feature.kilted]
 channels = ["robostack-kilted"]
-dependencies = { ros-kilted-ros-core = "*" }
+dependencies = { ros-kilted-rewire-ros = { path = "." }, ros-kilted-ros2launch = "*", ros-kilted-ros2run = "*" }
 
 # Spelled as a full URL: robostack-lyrical publishes on prefix.dev only, and
 # a bare channel name resolves against conda.anaconda.org, where it 404s.
 [feature.lyrical]
 channels = ["https://prefix.dev/robostack-lyrical"]
-dependencies = { ros-lyrical-ros-core = "*" }
+dependencies = { ros-lyrical-rewire-ros = { path = "." }, ros-lyrical-ros2launch = "*", ros-lyrical-ros2run = "*" }
