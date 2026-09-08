@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
-project(rewire_ros)
+project(rewire)
 
 find_package(ament_cmake REQUIRED)
 

@@ -8,7 +8,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, ExecuteProcess, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
 
-PACKAGE = 'rewire_ros'
+PACKAGE = 'rewire'
 
 
 def rewire_executable():

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Build the ros-<distro>-rewire-ros deb from this checkout.
+# Build the ros-<distro>-rewire deb from this checkout.
 #
 # The package carries no binaries and no compiled code, so one deb serves every
 # architecture. rewire itself is a separate package that apt pulls in, and the
@@ -17,7 +17,7 @@ set -eo pipefail
 distro="$1"
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 version="$(sed -n 's:.*<version>\(.*\)</version>.*:\1:p' "$root/package.xml" | head -1)"
-package="ros-${distro}-rewire-ros"
+package="ros-${distro}-rewire"
 deb="$root/${package}_${version}_all.deb"
 
 source "/opt/ros/${distro}/setup.bash"
@@ -46,7 +46,7 @@ dpkg-deb --build "$root/pkg" "$deb"
 
 dpkg-deb --info "$deb"
 dpkg-deb --contents "$deb"
-if dpkg-deb --contents "$deb" | grep -E 'lib/rewire_ros/rewire'; then
+if dpkg-deb --contents "$deb" | grep -E 'lib/rewire/rewire'; then
   echo "error: the deb carries a rewire binary; it must depend on the rewire package instead" >&2
   exit 1
 fi

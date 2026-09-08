@@ -34,7 +34,7 @@ rewire speaks DDS and Zenoh natively and is not an rcl node, so this package doe
 ```bash
 curl -fsSL https://apt.rewire.run/key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/rewire.gpg
 echo "deb [signed-by=/usr/share/keyrings/rewire.gpg] https://apt.rewire.run stable main" | sudo tee /etc/apt/sources.list.d/rewire.list
-sudo apt update && sudo apt install ros-humble-rewire-ros
+sudo apt update && sudo apt install ros-humble-rewire
 ```
 
 Substitute your distribution for `humble`. The package depends on `rewire`, so apt installs the bridge and the viewer from the same repository. One copy of rewire serves every ROS distribution on the machine.
@@ -45,7 +45,7 @@ Substitute your distribution for `humble`. The package depends on `rewire`, so a
 cd ~/ros2_ws/src
 git clone https://github.com/rewire-run/rewire-ros.git
 cd ~/ros2_ws
-colcon build --packages-select rewire_ros
+colcon build --packages-select rewire
 source install/setup.bash
 ```
 
@@ -62,11 +62,11 @@ Pass them through `colcon build --cmake-args`.
 ## Quick Start
 
 ```bash
-ros2 launch rewire_ros rewire.launch.py                                   # Open a viewer and stream everything
-ros2 launch rewire_ros rewire.launch.py connect:=192.168.1.10:9876        # Stream to a viewer on another machine
-ros2 launch rewire_ros rewire.launch.py save:=/data/flight args:="--no-live"   # Record to an .rrd, no viewer
+ros2 launch rewire rewire.launch.py                                   # Open a viewer and stream everything
+ros2 launch rewire rewire.launch.py connect:=192.168.1.10:9876        # Stream to a viewer on another machine
+ros2 launch rewire rewire.launch.py save:=/data/flight args:="--no-live"   # Record to an .rrd, no viewer
 
-ros2 run rewire_ros rewire doctor                                         # The full CLI is available too
+ros2 run rewire rewire doctor                                         # The full CLI is available too
 ```
 
 | Argument | Default | Meaning |
@@ -85,8 +85,8 @@ With `connect` empty, rewire looks for a viewer already listening and spawns the
 Topic selection, throttling, and per-topic overrides live in rewire's JSON5 config, which supports glob patterns the flags cannot express. This package ships no config of its own. With `config` left empty, rewire reads `~/.config/rewire/config.json5` when it exists and otherwise runs on defaults, so a config you already use keeps working.
 
 ```bash
-ros2 run rewire_ros rewire config generate > my_robot.json5
-ros2 launch rewire_ros rewire.launch.py config:=my_robot.json5
+ros2 run rewire rewire config generate > my_robot.json5
+ros2 launch rewire rewire.launch.py config:=my_robot.json5
 ```
 
 Domain ID follows `ROS_DOMAIN_ID`, and custom message types resolve through `AMENT_PREFIX_PATH`, so sourcing your workspace is all that is required. The full reference is at [docs.rewire.run](https://docs.rewire.run).
@@ -98,7 +98,7 @@ No ROS installation is needed. [pixi](https://pixi.sh) builds the package with [
 ```bash
 pixi run check                    # Build on jazzy, then run the same checks as CI
 pixi run -e humble check          # Same on humble, kilted, or lyrical
-pixi build                        # Produce a ros-jazzy-rewire-ros .conda package
+pixi build                        # Produce a ros-jazzy-rewire .conda package
 ```
 
 The bridge version a source build installs is pinned in [`sources.json`](sources.json), and moving it is a plain commit. The package has its own version in [`package.xml`](package.xml) and is released only when the package itself changes. Each release publishes the debs to apt.rewire.run, where they depend on whatever rewire is current. Commit messages follow [conventional commits](https://www.conventionalcommits.org).
