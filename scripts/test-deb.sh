@@ -32,10 +32,10 @@ cp "$deb" "$repo/"
 (cd "$repo" && dpkg-scanpackages . > Packages)
 echo "deb [trusted=yes] file://${repo} ./" > /etc/apt/sources.list.d/local.list
 apt-get update
-apt-get install -y "ros-${distro}-rewire-ros"
+apt-get install -y "ros-${distro}-rewire"
 
 dpkg -s rewire > /dev/null
 command -v rewire
 rewire --version
 source "/opt/ros/${distro}/setup.bash"
-ros2 launch rewire_ros rewire.launch.py --show-args
+ros2 launch rewire rewire.launch.py --show-args

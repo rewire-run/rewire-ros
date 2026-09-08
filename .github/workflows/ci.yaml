@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          path: src/rewire_ros
+          path: src/rewire
 
       - name: Install colcon
         run: |
@@ -33,21 +33,21 @@ jobs:
         shell: bash
         run: |
           source /opt/ros/${{ matrix.distro }}/setup.bash
-          colcon build --packages-select rewire_ros
+          colcon build --packages-select rewire
 
       - name: The pinned binary runs
         shell: bash
         run: |
           source install/setup.bash
-          ros2 run rewire_ros rewire --version
+          ros2 run rewire rewire --version
 
       - name: The viewer ships beside the bridge
         shell: bash
         run: |
-          test -x install/rewire_ros/lib/rewire_ros/rewire-viewer
+          test -x install/rewire/lib/rewire/rewire-viewer
 
       - name: The launch file declares its arguments
         shell: bash
         run: |
           source install/setup.bash
-          ros2 launch rewire_ros rewire.launch.py --show-args
+          ros2 launch rewire rewire.launch.py --show-args

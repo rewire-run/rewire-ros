@@ -50,7 +50,7 @@ jobs:
         run: scripts/build-deb.sh ${{ matrix.distro }}
 
       - name: Install it, letting apt pull rewire in
-        run: scripts/test-deb.sh ${{ matrix.distro }} ros-${{ matrix.distro }}-rewire-ros_*_all.deb
+        run: scripts/test-deb.sh ${{ matrix.distro }} ros-${{ matrix.distro }}-rewire_*_all.deb
 
       - uses: actions/upload-artifact@v7
         with:

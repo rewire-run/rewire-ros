@@ -18,7 +18,7 @@ channels = ["https://prefix.dev/conda-forge"]
 extra-input-globs = ["sources.json"]
 
 [tasks]
-check = "ros2 run rewire_ros rewire --version && ros2 launch rewire_ros rewire.launch.py --show-args"
+check = "ros2 run rewire rewire --version && ros2 launch rewire rewire.launch.py --show-args"
 
 [environments]
 default = { features = ["jazzy"], solve-group = "jazzy" }
@@ -29,18 +29,18 @@ lyrical = { features = ["lyrical"], solve-group = "lyrical" }
 
 [feature.humble]
 channels = ["robostack-humble"]
-dependencies = { ros-humble-rewire-ros = { path = "." }, ros-humble-ros2launch = "*", ros-humble-ros2run = "*" }
+dependencies = { ros-humble-rewire = { path = "." }, ros-humble-ros2launch = "*", ros-humble-ros2run = "*" }
 
 [feature.jazzy]
 channels = ["robostack-jazzy"]
-dependencies = { ros-jazzy-rewire-ros = { path = "." }, ros-jazzy-ros2launch = "*", ros-jazzy-ros2run = "*" }
+dependencies = { ros-jazzy-rewire = { path = "." }, ros-jazzy-ros2launch = "*", ros-jazzy-ros2run = "*" }
 
 [feature.kilted]
 channels = ["robostack-kilted"]
-dependencies = { ros-kilted-rewire-ros = { path = "." }, ros-kilted-ros2launch = "*", ros-kilted-ros2run = "*" }
+dependencies = { ros-kilted-rewire = { path = "." }, ros-kilted-ros2launch = "*", ros-kilted-ros2run = "*" }
 
 # Spelled as a full URL: robostack-lyrical publishes on prefix.dev only, and
 # a bare channel name resolves against conda.anaconda.org, where it 404s.
 [feature.lyrical]
 channels = ["https://prefix.dev/robostack-lyrical"]
-dependencies = { ros-lyrical-rewire-ros = { path = "." }, ros-lyrical-ros2launch = "*", ros-lyrical-ros2run = "*" }
+dependencies = { ros-lyrical-rewire = { path = "." }, ros-lyrical-ros2launch = "*", ros-lyrical-ros2run = "*" }
