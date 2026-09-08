@@ -87,7 +87,7 @@ jobs:
           merge-multiple: true
           path: debs
 
-      - uses: rewire-run/actions/apt-publish@feat/apt-publish
+      - uses: rewire-run/actions/apt-publish@v1
         with:
           debs: debs/*.deb
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
