@@ -1,0 +1,49 @@
+[workspace]
+name = "rewire-ros"
+platforms = ["linux-64", "linux-aarch64", "osx-arm64"]
+channels = ["conda-forge"]
+
+[dependencies]
+cmake = ">=3.19"
+make = "*"
+cxx-compiler = "*"
+colcon-common-extensions = "*"
+
+[tasks]
+build = "colcon build --packages-select rewire_ros"
+
+# Mirrors the ci workflow. No `source install/setup.bash` here because pixi's
+# task shell has no `source`, so the install tree goes onto the ament index by hand.
+[tasks.check]
+cmd = """
+AMENT_PREFIX_PATH=$PIXI_PROJECT_ROOT/install/rewire_ros:$AMENT_PREFIX_PATH \
+ros2 run rewire_ros rewire --version \
+&& AMENT_PREFIX_PATH=$PIXI_PROJECT_ROOT/install/rewire_ros:$AMENT_PREFIX_PATH \
+ros2 launch rewire_ros rewire.launch.py --show-args
+"""
+depends-on = ["build"]
+
+[environments]
+default = { features = ["jazzy"], solve-group = "jazzy" }
+humble = { features = ["humble"], solve-group = "humble" }
+jazzy = { features = ["jazzy"], solve-group = "jazzy" }
+kilted = { features = ["kilted"], solve-group = "kilted" }
+lyrical = { features = ["lyrical"], solve-group = "lyrical" }
+
+[feature.humble]
+channels = ["robostack-humble"]
+dependencies = { ros-humble-ros-core = "*" }
+
+[feature.jazzy]
+channels = ["robostack-jazzy"]
+dependencies = { ros-jazzy-ros-core = "*" }
+
+[feature.kilted]
+channels = ["robostack-kilted"]
+dependencies = { ros-kilted-ros-core = "*" }
+
+# Spelled as a full URL: robostack-lyrical publishes on prefix.dev only, and
+# a bare channel name resolves against conda.anaconda.org, where it 404s.
+[feature.lyrical]
+channels = ["https://prefix.dev/robostack-lyrical"]
+dependencies = { ros-lyrical-ros-core = "*" }

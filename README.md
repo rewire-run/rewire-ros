@@ -52,6 +52,15 @@ The build needs network access to reach the GitHub release. To use a rewire you 
 colcon build --packages-select rewire_ros --cmake-args -DREWIRE_BINARY=/usr/bin/rewire
 ```
 
+Without a ROS installation, or on macOS, [pixi](https://pixi.sh) provides one per distribution from [RoboStack](https://robostack.github.io):
+
+```bash
+pixi run build                    # colcon build in the default env, jazzy
+pixi run -e humble check          # build, then run the same checks as CI
+```
+
+Environments exist for `humble`, `jazzy`, `kilted`, and `lyrical`.
+
 ## Launch
 
 ```bash
