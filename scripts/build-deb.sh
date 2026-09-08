@@ -6,22 +6,17 @@
 # architecture. rewire itself is a separate package that apt pulls in, and the
 # build fails if a copy of it slips into the tree.
 #
-# Usage: scripts/build-deb.sh <distro> [version]
+# Usage: scripts/build-deb.sh <distro>
 #
-#   scripts/build-deb.sh humble           # version from package.xml
-#   scripts/build-deb.sh humble v0.11.0   # what a tag build passes
-#
-# Expects a ROS install under /opt/ros/<distro>, as in the ros:<distro>-ros-base
-# images. Leaves the deb in the repository root.
+# The version comes from package.xml. Expects a ROS install under
+# /opt/ros/<distro>, as in the ros:<distro>-ros-base images. Leaves the deb in
+# the repository root.
 
 set -eo pipefail
 
 distro="$1"
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-version="${2#v}"
-if [ -z "$version" ]; then
-  version="$(sed -n 's:.*<version>\(.*\)</version>.*:\1:p' "$root/package.xml" | head -1)"
-fi
+version="$(sed -n 's:.*<version>\(.*\)</version>.*:\1:p' "$root/package.xml" | head -1)"
 package="ros-${distro}-rewire-ros"
 deb="$root/${package}_${version}_all.deb"
 
