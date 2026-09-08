@@ -22,79 +22,11 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # The package carries no binaries and no compiled code, so one deb serves every
-      # architecture. rewire itself is a separate package that apt pulls in.
-      - name: Build the install tree
-        shell: bash
-        run: |
-          source /opt/ros/${{ matrix.distro }}/setup.bash
-          cmake -S . -B build \
-            -DCMAKE_INSTALL_PREFIX=/opt/ros/${{ matrix.distro }} \
-            -DREWIRE_BUNDLE=OFF
-          DESTDIR="${PWD}/pkg" cmake --install build
+      - name: Build the deb
+        run: scripts/build-deb.sh ${{ matrix.distro }} ${{ github.ref_type == 'tag' && github.ref_name || '' }}
 
-      - name: Assemble the deb
-        shell: bash
-        run: |
-          VERSION="$(sed -n 's:.*<version>\(.*\)</version>.*:\1:p' package.xml | head -1)"
-          if [ -n "${GITHUB_REF_NAME#v}" ] && [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            VERSION="${GITHUB_REF_NAME#v}"
-          fi
-          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
-
-          mkdir -p pkg/DEBIAN
-          cat > pkg/DEBIAN/control << EOF
-          Package: ros-${{ matrix.distro }}-rewire-ros
-          Version: ${VERSION}
-          Section: misc
-          Priority: optional
-          Architecture: all
-          Depends: rewire, ros-${{ matrix.distro }}-launch, ros-${{ matrix.distro }}-ament-index-python, ros-${{ matrix.distro }}-ros-workspace
-          Maintainer: Alvaro Gaona <alvgaona@gmail.com>
-          Homepage: https://rewire.run
-          Description: ROS 2 launch integration for the rewire bridge
-           Starts rewire from ros2 launch, streaming live ROS 2 topics into the
-           Rerun viewer. The bridge itself comes from the rewire package.
-          EOF
-          sed -i 's/^          //' pkg/DEBIAN/control
-          dpkg-deb --build pkg "ros-${{ matrix.distro }}-rewire-ros_${VERSION}_all.deb"
-
-      - name: Inspect it
-        shell: bash
-        run: |
-          DEB="ros-${{ matrix.distro }}-rewire-ros_${VERSION}_all.deb"
-          dpkg-deb --info "${DEB}"
-          dpkg-deb --contents "${DEB}"
-          # Nothing from the release archive may ride along in this package.
-          if dpkg-deb --contents "${DEB}" | grep -E 'lib/rewire_ros/rewire'; then
-            echo "::error::the deb carries a rewire binary; it must depend on the rewire package instead"
-            exit 1
-          fi
-
-      # Installs by NAME out of a local repo holding both debs, so apt has to resolve
-      # Depends: rewire itself. apt.rewire.run is not used here because Cloudflare
-      # answers 403 to GitHub's runners.
       - name: Install it, letting apt pull rewire in
-        shell: bash
-        run: |
-          apt-get update
-          apt-get install -y --no-install-recommends dpkg-dev curl ca-certificates
-
-          REWIRE_VERSION="$(python3 -c "import json; print(json.load(open('sources.json'))['version'])")"
-          curl -fsSL -o "rewire_${REWIRE_VERSION}_amd64.deb" \
-            "https://github.com/rewire-run/rewire/releases/download/v${REWIRE_VERSION}/rewire_${REWIRE_VERSION}_amd64.deb"
-
-          mkdir -p /tmp/repo && cp ./*.deb /tmp/repo/
-          (cd /tmp/repo && dpkg-scanpackages . > Packages)
-          echo "deb [trusted=yes] file:///tmp/repo ./" > /etc/apt/sources.list.d/local.list
-          apt-get update
-          apt-get install -y "ros-${{ matrix.distro }}-rewire-ros"
-
-          dpkg -s rewire > /dev/null
-          command -v rewire
-          rewire --version
-          source /opt/ros/${{ matrix.distro }}/setup.bash
-          ros2 launch rewire_ros rewire.launch.py --show-args
+        run: scripts/test-deb.sh ${{ matrix.distro }} ros-${{ matrix.distro }}-rewire-ros_*_all.deb
 
       - uses: actions/upload-artifact@v7
         with:
