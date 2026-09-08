@@ -1,8 +1,33 @@
-# rewire_ros
+<h1 align="center">
+  <a href="https://rewire.run/">
+    <img alt="rewire" src="https://rewire.run/brand/rewire-banner.png">
+  </a>
+</h1>
 
-ROS 2 launch integration for [rewire](https://rewire.run), a drop-in bridge that streams live ROS 2 topics into the [Rerun](https://rerun.io) viewer.
+<p align="center">
+  <a href="https://github.com/rewire-run/rewire-ros/actions/workflows/ci.yaml">
+    <img alt="CI" src="https://github.com/rewire-run/rewire-ros/actions/workflows/ci.yaml/badge.svg">
+  </a>
+  <a href="https://github.com/rewire-run/rewire-ros/actions/workflows/deb.yaml">
+    <img alt="deb" src="https://github.com/rewire-run/rewire-ros/actions/workflows/deb.yaml/badge.svg">
+  </a>
+  <a href="https://github.com/rewire-run/rewire-ros/releases/latest">
+    <img alt="Version" src="https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fraw.githubusercontent.com%2Frewire-run%2Frewire-ros%2Fmain%2Fpackage.xml&query=%2Fpackage%2Fversion&prefix=v&label=version&color=green">
+  </a>
+  <img alt="ROS 2" src="https://img.shields.io/badge/ROS_2-humble_%7C_jazzy_%7C_kilted_%7C_lyrical-blue">
+  <a href="https://github.com/rewire-run/rewire-ros/blob/main/LICENSE">
+    <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-blue">
+  </a>
+  <a href="https://pixi.sh">
+    <img alt="Powered by" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/prefix-dev/pixi/main/assets/badge/v0.json">
+  </a>
+</p>
 
-rewire speaks DDS and Zenoh natively and is not an rcl node, so this package does not build it, wrap it in a node, or expose ROS parameters. It exists so that `ros2 launch` can start the bridge alongside the rest of your stack, with the configuration living where rewire already expects it.
+# ROS 2 launch integration for rewire
+
+Start [rewire](https://rewire.run), the drop-in bridge that streams live ROS 2 topics into the [Rerun](https://rerun.io) viewer, from `ros2 launch` alongside the rest of your stack.
+
+rewire speaks DDS and Zenoh natively and is not an rcl node, so this package does not build it, wrap it in a node, or expose ROS parameters. It ships a launch file and, on source builds, the bridge and viewer binaries.
 
 ## Install
 
@@ -12,31 +37,9 @@ echo "deb [signed-by=/usr/share/keyrings/rewire.gpg] https://apt.rewire.run stab
 sudo apt update && sudo apt install ros-humble-rewire-ros
 ```
 
-Substitute your distribution for `humble`. That one command is enough: the package declares a dependency on `rewire`, so apt fetches the bridge and the viewer from the same repository and puts them on your `PATH`. Nothing else to download.
+Substitute your distribution for `humble`. The package depends on `rewire`, so apt installs the bridge and the viewer from the same repository. One copy of rewire serves every ROS distribution on the machine.
 
-The ROS package itself carries no binaries, which is why one copy of rewire serves every ROS distribution you have installed. Build it from source instead, as below, and it bundles its own copy.
-
-## What the build does
-
-There is nothing to compile. The CMake step downloads the rewire release pinned in [`sources.json`](sources.json), verifies its SHA-256, and installs both binaries from it into the package's `lib` directory. You need nothing else on the machine: `ros2 launch` starts the bridge, and it finds the viewer sitting beside it.
-
-| Installed | Size |
-| --- | --- |
-| `rewire`, the bridge | 70 MB |
-| `rewire-viewer` | 235 MB |
-
-A robot that streams to a workstation has no use for a viewer, and can leave it out. A machine that already has rewire, from apt or the install script, needs no bundled copy at all:
-
-```bash
-colcon build --packages-select rewire_ros --cmake-args -DREWIRE_VIEWER=OFF
-colcon build --packages-select rewire_ros --cmake-args -DREWIRE_BUNDLE=OFF
-```
-
-With `-DREWIRE_BUNDLE=OFF` the package installs only the launch file and resolves `rewire` on `PATH`, which is exactly how the deb is built.
-
-Supported platforms are Linux on x86_64 and aarch64, plus macOS on Apple silicon.
-
-## Build
+### From source
 
 ```bash
 cd ~/ros2_ws/src
@@ -46,26 +49,24 @@ colcon build --packages-select rewire_ros
 source install/setup.bash
 ```
 
-The build needs network access to reach the GitHub release. To use a rewire you already have, from apt, nix, or the install script, point the build at it and nothing is downloaded:
+There is nothing to compile. The build downloads the rewire release pinned in [`sources.json`](sources.json), verifies its SHA-256, and installs the bridge (70 MB) and the viewer (235 MB) into the package. It needs network access to reach the GitHub release. Supported platforms are Linux on x86_64 and aarch64, and macOS on Apple silicon.
+
+| CMake flag | Effect |
+| --- | --- |
+| `-DREWIRE_VIEWER=OFF` | Skip the viewer. Right for a robot that streams to a workstation or records to disk |
+| `-DREWIRE_BINARY=/usr/bin/rewire` | Install a rewire you already have instead of downloading one |
+| `-DREWIRE_BUNDLE=OFF` | Install only the launch file and resolve `rewire` on `PATH`. This is how the deb is built |
+
+Pass them through `colcon build --cmake-args`.
+
+## Quick Start
 
 ```bash
-colcon build --packages-select rewire_ros --cmake-args -DREWIRE_BINARY=/usr/bin/rewire
-```
+ros2 launch rewire_ros rewire.launch.py                                   # Open a viewer and stream everything
+ros2 launch rewire_ros rewire.launch.py connect:=192.168.1.10:9876        # Stream to a viewer on another machine
+ros2 launch rewire_ros rewire.launch.py save:=/data/flight args:="--no-live"   # Record to an .rrd, no viewer
 
-Without a ROS installation, or on macOS, [pixi](https://pixi.sh) builds the package with [pixi-build-ros](https://pixi.prefix.dev/latest/build/ros/) against a [RoboStack](https://robostack.github.io) distribution and installs it into the environment, no colcon involved:
-
-```bash
-pixi run check                    # build on jazzy, then run the same checks as CI
-pixi run -e humble check          # same on humble, kilted, or lyrical
-pixi build                        # produce a ros-jazzy-rewire-ros .conda package
-```
-
-## Launch
-
-```bash
-ros2 launch rewire_ros rewire.launch.py
-ros2 launch rewire_ros rewire.launch.py connect:=192.168.1.10:9876
-ros2 launch rewire_ros rewire.launch.py save:=/data/flight args:="--no-live"
+ros2 run rewire_ros rewire doctor                                         # The full CLI is available too
 ```
 
 | Argument | Default | Meaning |
@@ -75,41 +76,32 @@ ros2 launch rewire_ros rewire.launch.py save:=/data/flight args:="--no-live"
 | `save` | empty | Write an `.rrd` archive with this path stem |
 | `args` | empty | Extra flags passed through to `rewire record` verbatim |
 
-Anything not covered by a named argument goes through `args`, so the whole command line stays reachable without this package growing a knob per flag. The full CLI is also available directly:
+Anything not covered by a named argument goes through `args`, so the whole command line stays reachable.
 
-```bash
-ros2 run rewire_ros rewire doctor
-ros2 run rewire_ros rewire types
-```
+With `connect` empty, rewire looks for a viewer already listening and spawns the bundled one if it finds none. A build with `-DREWIRE_VIEWER=OFF` and an empty `connect` falls through to a stock Rerun viewer on `PATH`, so pair that flag with `connect` or `save`.
 
 ## Configuration
 
-Topic selection, throttling, and per-topic overrides belong in the JSON5 config rather than on the command line, because the file supports glob patterns and per-topic rules that the flags cannot express.
-
-This package ships no config of its own, so rewire resolves it exactly as it does outside ROS. With the `config` argument left empty, it reads `~/.config/rewire/config.json5` when that file exists, and otherwise runs on defaults. A config you already wrote for rewire therefore keeps working when you launch it this way.
-
-To start from a documented template, or to keep a config per robot:
+Topic selection, throttling, and per-topic overrides live in rewire's JSON5 config, which supports glob patterns the flags cannot express. This package ships no config of its own. With `config` left empty, rewire reads `~/.config/rewire/config.json5` when it exists and otherwise runs on defaults, so a config you already use keeps working.
 
 ```bash
 ros2 run rewire_ros rewire config generate > my_robot.json5
 ros2 launch rewire_ros rewire.launch.py config:=my_robot.json5
 ```
 
-Every key in the template ships commented out, so the defaults apply as-is. The usual first edit is uncommenting the `exclude` list to drop `/rosout` and `/parameter_events`.
+Domain ID follows `ROS_DOMAIN_ID`, and custom message types resolve through `AMENT_PREFIX_PATH`, so sourcing your workspace is all that is required. The full reference is at [docs.rewire.run](https://docs.rewire.run).
 
-Domain ID needs no argument. With `domain_id` left commented out, rewire falls back to `ROS_DOMAIN_ID`, so a launch that inherits your environment joins the same graph as everything else. Custom message types resolve through `AMENT_PREFIX_PATH`, so sourcing the workspace that holds your interface packages is all that is required.
+## Development
 
-## Choosing an output
+No ROS installation is needed. [pixi](https://pixi.sh) builds the package with [pixi-build-ros](https://pixi.prefix.dev/latest/build/ros/) against a [RoboStack](https://robostack.github.io) distribution and installs it into the environment:
 
-With `connect` empty, rewire probes for a viewer already listening and spawns one if it finds none. The bundled viewer sits next to the bridge in the package's `lib` directory, which is the first place rewire looks, so a plain launch on a desktop opens a window and needs no argument.
+```bash
+pixi run check                    # Build on jazzy, then run the same checks as CI
+pixi run -e humble check          # Same on humble, kilted, or lyrical
+pixi build                        # Produce a ros-jazzy-rewire-ros .conda package
+```
 
-Two cases want something else. A robot streaming to a workstation should pass `connect` naming that machine, which skips the probe entirely. A robot recording for later should pass `save` together with `args:="--no-live"`, which writes an `.rrd` and never looks for a viewer at all. Both are worth pairing with `-DREWIRE_VIEWER=OFF` at build time, since neither spawns one.
-
-A build with `-DREWIRE_VIEWER=OFF` and an empty `connect` falls through to spawning a stock Rerun viewer, which fails unless `rerun` is on `PATH`. That combination is the one to avoid.
-
-## Versioning
-
-The package version tracks the rewire release it pins, so `rewire_ros` 0.10.1 installs rewire 0.10.1. Upgrading the bridge means bumping [`sources.json`](sources.json) and the version in `package.xml` together.
+The package version tracks the rewire release it pins. Upgrading the bridge means bumping [`sources.json`](sources.json) and the version in [`package.xml`](package.xml) together. Commit messages follow [conventional commits](https://www.conventionalcommits.org).
 
 ## License
 
