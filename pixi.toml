@@ -13,6 +13,10 @@ name = "pixi-build-ros"
 version = "*"
 channels = ["https://prefix.dev/conda-forge"]
 
+# Not in the backend's default globs, so a pin bump would otherwise reuse the cached build.
+[package.build.config]
+extra-input-globs = ["sources.json"]
+
 [tasks]
 check = "ros2 run rewire_ros rewire --version && ros2 launch rewire_ros rewire.launch.py --show-args"
 
