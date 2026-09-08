@@ -101,7 +101,7 @@ pixi run -e humble check          # Same on humble, kilted, or lyrical
 pixi build                        # Produce a ros-jazzy-rewire-ros .conda package
 ```
 
-The package version tracks the rewire release it pins. Upgrading the bridge means bumping [`sources.json`](sources.json) and the version in [`package.xml`](package.xml) together. Commit messages follow [conventional commits](https://www.conventionalcommits.org).
+The bridge version a source build installs is pinned in [`sources.json`](sources.json), and moving it is a plain commit. The package has its own version in [`package.xml`](package.xml) and is released only when the package itself changes. Each release publishes the debs to apt.rewire.run, where they depend on whatever rewire is current. Commit messages follow [conventional commits](https://www.conventionalcommits.org).
 
 ## License
 
